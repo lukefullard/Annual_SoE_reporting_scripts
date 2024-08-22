@@ -34,5 +34,5 @@ def test_function(x:       list,
     else:
         comment_present = 'no'
         
-    return x,comment_present
+    return comment_present,x
 
