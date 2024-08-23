@@ -81,7 +81,7 @@ def plot_bar_chart(       df:              pd.DataFrame,
     if color_discrete_map == None: color_discrete_map = {default_color:default_color}
 
         
-        
+    #make the plot!!!!!    
     fig = px.bar(df, x=x_column, y=y_column, 
                  color=colour_column,
                  pattern_shape=pattern_shape,
@@ -119,9 +119,9 @@ def plot_bar_chart(       df:              pd.DataFrame,
     )
     
     #show legend or not?
-    fig.update_layout(showlegend=False)
+    fig.update_layout(showlegend=showlegend)
     
-    
+    #save as a figure
     fig.write_html(save_location,include_plotlyjs="cdn")
 
 
