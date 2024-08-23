@@ -86,7 +86,7 @@ def plot_bar_chart(       df:              pd.DataFrame,
                  color_discrete_map = color_discrete_map,
                  width = width, height=height,
                  barmode = barmode,
-                 theme = settings.get('plot_settings').get(bar_type).get('theme'),
+                 template = settings.get('plot_settings').get(bar_type).get('theme'),
                  category_orders=category_orders,
                  )
     
