@@ -69,14 +69,17 @@ def plot_bar_chart(       df:              pd.DataFrame,
         bar_type = None
         
     #if colour column is None, make all bars the same colour
+    showlegend = True
     default_color = settings.get('plot_settings').get(bar_type).get('default_bar_colour')
     if colour_column is None:
         df['colour_column'] = settings.get('plot_settings').get(bar_type).get('default_bar_colour')
         colour_column = 'colour_column'
+        showlegend = False
         
     #setting the bar colours    
-    color_discrete_map = settings.get('plot_settings').get(bar_type).get('color_discrete_map',
-                                                                         {default_color:default_color})
+    color_discrete_map = settings.get('plot_settings').get(bar_type).get('color_discrete_map')
+    if color_discrete_map == None: color_discrete_map = {default_color:default_color}
+
         
         
     fig = px.bar(df, x=x_column, y=y_column, 
@@ -114,6 +117,9 @@ def plot_bar_chart(       df:              pd.DataFrame,
     fig.update_layout(
     title=settings.get('plot_settings').get(bar_type).get('title_font'),
     )
+    
+    #show legend or not?
+    fig.update_layout(showlegend=False)
     
     
     fig.write_html(save_location,include_plotlyjs="cdn")
