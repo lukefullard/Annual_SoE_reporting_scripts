@@ -77,14 +77,16 @@ def  spJoin_GetFMU (gdfi   ,
    if gdfi.crs != FMUshpi.crs:
     gdfi.crs = gdfi.crs.to_crs(FMUshpi.crs)
     
-   #spatial join fo all the records 
-   FMU_ = gpd.sjoin_nearest(gdfi,FMUshpi,how='left', distance_col='distance_to_nearest')
-   # FMUlevelDf_join    = gpd.sjoin(gdfi, FMUshpi, how='left',predicate="contains")
-   
-   #select records which have nan's in FMU coloumn because they lie on boundary 
-   
-   return FMUlevelDf_nearest
+   # **********  Spatial join using centroid  ***********************
+  
+   gdfi['centroid'] = gdfi.centroid
 
+   # Create a GeoDataFrame for centroids
+   gdf_temp_centroids = gpd.GeoDataFrame(gdfi, geometry='centroid', crs=gdfi.crs)
+
+   # Perform spatial join to find centroids within polygons in gdf2
+   FMUlevel_gdf= gpd.sjoin_nearest(gdf_temp_centroids, FMUshpi, how='left',max_distance = 2000,distance_col= 'dist' )
+   return FMUlevel_gdf
 
 #################################################################################################################
 
@@ -104,6 +106,8 @@ def main():
     # FMUshp = dict_sitelayers.get(
     #                              settings.get("FMUShpFile "))
     FMUlevel_sites= spJoin_GetFMU(gdf,FMUshp)
+    
+    return FMUlevel_sites
     #0.1) Get the Information at FMU level - spatial join 
     
     
@@ -112,8 +116,9 @@ def main():
     #3) Histogram plot of number of sites under a "managed level" for each FMU / the whole region over time. 
     #4) 
     
-    
-
+if __name__ == "__main__":
+    FMUtst = main()
+     
     
     
 
