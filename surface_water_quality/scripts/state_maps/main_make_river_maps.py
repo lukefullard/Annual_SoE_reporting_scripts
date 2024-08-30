@@ -229,7 +229,7 @@ if __name__ == '__main__':
     
     
     for param_j in settings.get('final_name_map').keys():
-        fff
+        
         if not param_j in settings.get('ecoli_parameters'):
             legend_template = 'nof_grade_template'
         else:
@@ -241,11 +241,12 @@ if __name__ == '__main__':
                      fmu_column='FMU',
                      save_name = os.path.join(results_dir, f'{settings.get("final_name_map").get(param_j)}.html'),
                      settings=settings,
-                     legend_template=legend_template,
+                     legend_template=maplegendtemplates.get(legend_template),
                      plot_riverlines = False,
                      popup_text  = True,
                      opacity_column = False,
                      current_state_period = currentstateperiod
                     )
+        ffff  #just adding this so we only plot one map for now during tetsing
     
     

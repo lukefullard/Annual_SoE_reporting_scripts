@@ -136,6 +136,7 @@ def make_site_plot(df          : pd.DataFrame,
         DESCRIPTION. html sting for the figure of the grade history at the site.
 
     '''
+    
     fig = px.scatter(df, y="Site name label", x="state period", color=topic_column, text=topic_column, 
                      color_discrete_map = settings.get('map_settings').get('nof_grade_mapping'),
                      title = f"{site_name} - {topic_column}",
@@ -143,7 +144,9 @@ def make_site_plot(df          : pd.DataFrame,
     fig.update_yaxes(visible=False, showticklabels=False)
     fig.update_xaxes(visible=True, showticklabels=True,tickangle=45, title = '')
     fig.update_xaxes(categoryorder='category ascending')
-    fig.update_traces(marker=dict(size=20))
+    marker_sizes = [20] * (len(df) - 1) + [40]
+    fig.update_traces(marker=dict(size=marker_sizes))
+    # fig.update_traces(marker=dict(size=20))
     fig.update_layout(legend_title_text='Grade')
     return fig.to_html(full_html=False,include_plotlyjs='cdn')
 ###############################################################################
@@ -379,7 +382,7 @@ def add_site_level_results(feature_groups       : list,
             folium.CircleMarker(
             location=[row_a.geometry.y, row_a.geometry.x],
             radius=8,
-            colour = outline_colour,
+            color = outline_colour,
             weight = 1,
             fill=True,
             fill_color=settings.get("map_settings").get('nof_grade_mapping').get(row_a[current_column]),
