@@ -2,3 +2,4 @@
 biodiversity/scripts/managed_sites/settings.py
 biodiversity/scripts/managed_sites/__pycache__/settings.cpython-312.pyc
 surface_water_quality/scripts/state_maps/settings.py
+*.pyc
