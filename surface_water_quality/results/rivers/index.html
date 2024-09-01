@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin: 20px;
+        }
+        iframe {
+            width: 100%;
+            height: 90vh;
+            border: none;
+        }
+    </style>
+    <script>
+        function updateDropdown2() {
+            const dropdown1 = document.getElementById('dropdown1').value;
+            const dropdown2 = document.getElementById('dropdown2');
+            let options = [];
+
+            switch (dropdown1) {
+                case 'Water quality':
+                    options = ['Overall Water quality', 'Nitrate Toxicity', 'Dissolved Reactive Phosphorus', 'Ammonia Toxicity', 'Chlorophyll a', 'Suspended Sediment'];
+                    break;
+                case 'Aquatic life':
+                    options = ['Overall Aquatic life', 'MCI', 'QMCI', 'ASPM'];
+                    break;
+                case 'Ecosystem processes':
+                    options = ['Overall Ecosystem processes', 'Dissolved Oxygen'];
+                    break;
+                case 'Ecosystem health':
+                    options = ['Overall Ecosystem health', 'Overall Water Quality', 'Overall Aquatic life', 'Overall Ecosystem processes'];
+                    break;
+                case 'Human health':
+                    options = ['Overall Human health', 'E. coli median', 'E. coli 95th percentile', 'E. coli > 260 MPN/100mL', 'E. coli > 540 MPN/100mL'];
+                    break;
+            }
+
+            dropdown2.innerHTML = '';
+            options.forEach(option => {
+                const opt = document.createElement('option');
+                opt.value = option;
+                opt.innerHTML = option;
+                dropdown2.appendChild(opt);
+            });
+
+            updateIframe();
+        }
+
+        function updateIframe() {
+            const dropdown1 = document.getElementById('dropdown1').value;
+            const dropdown2 = document.getElementById('dropdown2').value;
+            const iframe = document.getElementById('iframe');
+            const fileMap = {
+                'Water quality': {
+                    'Overall Water quality': 'Water quality.html',
+                    'Nitrate Toxicity': 'Nitrate Toxicity.html',
+                    'Dissolved Reactive Phosphorus': 'Dissolved Reactive Phosphorus.html',
+                    'Ammonia Toxicity': 'Ammonia Toxicity.html',
+                    'Chlorophyll a': 'Chlorophyll a.html',
+                    'Suspended Sediment': 'Suspended Fine Sediment.html'
+                },
+                'Aquatic life': {
+                    'Overall Aquatic life': 'Aquatic Life.html',
+                    'MCI': 'MCI.html',
+                    'QMCI': 'QMCI.html',
+                    'ASPM': 'ASPM.html'
+                },
+                'Ecosystem processes': {
+                    'Overall Ecosystem processes': 'Ecosystem Processes.html',
+                    'Dissolved Oxygen': 'Dissolved Oxygen.html'
+                },
+                'Ecosystem health': {
+                    'Overall Ecosystem health': 'Ecosystem Health.html',
+                    'Overall Water Quality': 'Water quality.html',
+                    'Overall Aquatic life': 'Aquatic Life.html',
+                    'Overall Ecosystem processes': 'Ecosystem Processes.html'
+                },
+                'Human health': {
+                    'Overall Human health': 'Human Health SOE.html',
+                    'E. coli median': 'E coli  median.html',
+                    'E. coli 95th percentile': 'E coli  95th Percentile.html',
+                    'E. coli > 260 MPN/100mL': 'E coli  proportion of Samples  260 MPN.html',
+                    'E. coli > 540 MPN/100mL': 'E coli  proportion of Samples  540 MPN.html'
+                }
+            };
+
+            iframe.src = fileMap[dropdown1][dropdown2];
+        }
+
+        window.onload = function() {
+            updateDropdown2();
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+		<div>
+			<label for="dropdown1">Value:</label>
+			<select id="dropdown1" onchange="updateDropdown2()">
+				<option value="Water quality">Water quality</option>
+				<option value="Aquatic life">Aquatic life</option>
+				<option value="Ecosystem processes">Ecosystem processes</option>
+				<option value="Ecosystem health">Ecosystem health</option>
+				<option value="Human health">Human health</option>
+			</select>
+		</div>
+		<div style="margin-top: 10px;">
+			<label for="dropdown2">Component:</label>
+			<select id="dropdown2" onchange="updateIframe()">
+				<!-- Options will be populated based on the first dropdown -->
+			</select>
+		</div>
+    </div>
+
+    <iframe id="iframe" src="Water quality.html"></iframe>
+</body>
+</html>

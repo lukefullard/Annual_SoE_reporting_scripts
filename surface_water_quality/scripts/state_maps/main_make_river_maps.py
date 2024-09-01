@@ -239,7 +239,7 @@ if __name__ == '__main__':
                  gis_data,
                  current_column = settings.get('final_name_map').get(param_j,param_j),
                      fmu_column='FMU',
-                     save_name = os.path.join(results_dir, f'{settings.get("final_name_map").get(param_j)}.html'),
+                     save_name = os.path.join(results_dir, f'{settings.get("final_name_map").get(param_j).replace(".","").replace(":"," ").replace(">"," ")}.html'),
                      settings=settings,
                      legend_template=maplegendtemplates.get(legend_template),
                      plot_riverlines = False,
@@ -247,6 +247,6 @@ if __name__ == '__main__':
                      opacity_column = False,
                      current_state_period = currentstateperiod
                     )
-        ffff  #just adding this so we only plot one map for now during tetsing
+        
     
     

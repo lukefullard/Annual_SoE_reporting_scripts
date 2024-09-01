@@ -112,10 +112,11 @@ def get_riverlines(settings    : dict,
 ###############################################################################
 ###############################################################################
 ###############################################################################
-def make_site_plot(df          : pd.DataFrame,
-                   site_name   : str, 
-                   topic_column: str, 
-                   settings    : dict) -> str:
+def make_site_plot(df                   : pd.DataFrame,
+                   site_name            : str, 
+                   topic_column         : str, 
+                   settings             : dict,
+                   current_state_period : str) -> str:
     '''
     Function to generate a scatter plot of grade history at a site and output as an html string.
 
@@ -129,6 +130,8 @@ def make_site_plot(df          : pd.DataFrame,
         DESCRIPTION. Name of the current topic (e.g. MCI, E. coli, etc)
     settings : dict
         DESCRIPTION. Settings dictionary
+    current_state_period : str, optional
+        DESCRIPTION. The most recent state period (to know which year is the main one to plot).    
 
     Returns
     -------
@@ -139,15 +142,21 @@ def make_site_plot(df          : pd.DataFrame,
     
     fig = px.scatter(df, y="Site name label", x="state period", color=topic_column, text=topic_column, 
                      color_discrete_map = settings.get('map_settings').get('nof_grade_mapping'),
-                     title = f"{site_name} - {topic_column}",
+                     title = f"{site_name} <br>{topic_column}",
                      )
     fig.update_yaxes(visible=False, showticklabels=False)
     fig.update_xaxes(visible=True, showticklabels=True,tickangle=45, title = '')
     fig.update_xaxes(categoryorder='category ascending')
-    marker_sizes = [20] * (len(df) - 1) + [40]
-    fig.update_traces(marker=dict(size=marker_sizes))
-    # fig.update_traces(marker=dict(size=20))
+    
+    fig.update_traces(marker=dict(size=20))
     fig.update_layout(legend_title_text='Grade')
+    
+    for grade_j in fig.data:
+        if current_state_period in grade_j.x:
+            len_x = len(grade_j.x)
+            marker_sizes = tuple([20] * (len_x - 1) + [40])
+            grade_j['marker']['size'] = marker_sizes
+    
     return fig.to_html(full_html=False,include_plotlyjs='cdn')
 ###############################################################################
 ###############################################################################
@@ -376,8 +385,8 @@ def add_site_level_results(feature_groups       : list,
             outline_colour = "#000000"
             current_site_name = row_a['Site name label']
             current_site_filtered_data = site_data.loc[site_data['Site name label'] == current_site_name].sort_values(by='state period').reset_index(drop=True)
-            iframe = IFrame(html = make_site_plot(current_site_filtered_data,current_site_name,current_column, settings), width=500, height=300)
-            popup = folium.Popup(iframe, max_width=500)
+            iframe = IFrame(html = make_site_plot(current_site_filtered_data,current_site_name,current_column, settings,current_state_period), width=600, height=350)
+            popup = folium.Popup(iframe, max_width=600)
             
             folium.CircleMarker(
             location=[row_a.geometry.y, row_a.geometry.x],
