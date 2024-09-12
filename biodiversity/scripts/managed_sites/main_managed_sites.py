@@ -8,6 +8,8 @@ Created on Fri Aug 23 11:07:32 2024
 
 import pandas as pd
 import geopandas as gpd
+import copy
+from shapely.geometry import Polygon
 
 
 def load_geodb  (settings:  dict,
@@ -30,7 +32,9 @@ def load_geodb  (settings:  dict,
     
     
     return gdb_dict 
-    
+#################################################################################################################
+#################################################################################################################
+#################################################################################################################    
 def getFMUFlie (settings: dict,
                 
                 ):
@@ -54,7 +58,9 @@ def getFMUFlie (settings: dict,
     
     return FMUshpdf
 
-        
+#################################################################################################################
+#################################################################################################################
+#################################################################################################################     
 def  spJoin_GetFMU (gdfi   ,
                     FMUshpi 
                     ) :
@@ -89,9 +95,78 @@ def  spJoin_GetFMU (gdfi   ,
    return FMUlevel_gdf
 
 #################################################################################################################
+#################################################################################################################
+#################################################################################################################
+def prepare_data_for_bar_charts(gdf               : gpd.GeoDataFrame|pd.DataFrame,
+                                group_1_column    : str,
+                                group_1_groupings : dict,
+                                value_column      : str|None,
+                                value_is_length   : bool = False,
+                                colour_column     : str|None = None,
+                                colour_groupings  : dict|None = None
+                                ) -> pd.DataFrame:
+    '''
+    Function to massage data from a dataframe into a form suitable for plotting as a bar chart.
 
+    Parameters
+    ----------
+    gdf : gpd.GeoDataFrame|pd.DataFrame
+        DESCRIPTION. Input dataframe
+    group_1_column : str
+        DESCRIPTION: Column name which we will use to group the x-axis of the bar chart.
+    group_1_groupings : dict
+        DESCRIPTION: Mapping dictionary to group together items from the group_1_column.
+    value_column : str|None
+        DESCRIPTION. If None then the length of the dataframe for each group is used as the value, otherwise the sum of the provided column name for each group is used as the value.
+    value_is_length : bool, optional
+        DESCRIPTION. The default is False. If True then the length of the dataframe for each group is used as the value.
+    colour_column : str|None, optional
+        DESCRIPTION. The default is None. Column name for a type of subgrouping (e.g. FMU = Manawatu, mananagement group = 6).
+    colour_groupings : dict|None, optional
+        DESCRIPTION. The default is None. Maping for the subgrouping.
+
+
+    Returns
+    -------
+    new_df : pd.DataFrame
+        DESCRIPTION. Dataframe ready for plotting.
+
+    '''
+    
+    if (not value_column) & (not value_is_length):
+        raise ValueError('One of value_column or value_is_length needs to not be None or False. Please fix this.')
+    
+    new_df = pd.DataFrame(columns = ['group','colour','value'])
+    for group_1_key in group_1_groupings.keys():
+        # filtered_gdf = gdf.loc[gdf[group_1_column].isin(group_1_groupings.get(group_1_key))].reset_index(drop=True)
+        try: filtered_gdf = gdf.loc[gdf[group_1_column].isin(group_1_groupings.get(group_1_key))].reset_index(drop=True)
+        except: filtered_gdf = gdf.loc[gdf[group_1_column] == group_1_groupings.get(group_1_key)].reset_index(drop=True)
+        
+        if colour_column:
+            for colour_key in colour_groupings.keys():
+                sub_gdf = filtered_gdf.loc[filtered_gdf[colour_column].isin(colour_groupings.get(colour_key))].reset_index(drop=True)
+                if value_is_length:sub_value = len(sub_gdf)
+                else:              sub_value = sub_gdf[value_column].sum()
+                new_df.loc[len(new_df)] = [group_1_key,colour_key,sub_value]
+        else: 
+            sub_gdf = copy.deepcopy(filtered_gdf)
+            if value_is_length:sub_value = len(sub_gdf)
+            else:              sub_value = sub_gdf[value_column].sum()
+            new_df.loc[len(new_df)] = [group_1_key,'',sub_value]
+    return new_df        
+            
+#################################################################################################################
+#################################################################################################################
+#################################################################################################################
+
+
+#################################################################################################################
+#################################################################################################################
+#################################################################################################################
 def main():
     from settings import load_settings
+    from plotting_managed_sites import plot_bar_chart
+    from mapping_functions import make_a_map
     #load settings
     settings = load_settings()
     
@@ -107,17 +182,31 @@ def main():
     #                              settings.get("FMUShpFile "))
     FMUlevel_sites= spJoin_GetFMU(gdf,FMUshp)
     
-    return FMUlevel_sites
-    #0.1) Get the Information at FMU level - spatial join 
+    #make map
+    make_a_map(FMUlevel_sites,
+                   FMUshp,
+                   settings,
+                   'test.html',
+                   cluster_to_centroids = True,
+                   cluster_name_column_gdf  = settings.get('fmu_name_column'),
+                   )
     
     
-    #1) Histogram plot of number of managed and the area of manages sites per FMU 
+    return FMUlevel_sites,FMUshp
+    
+    
+    
+    
+
+    #################################################################################################################
+    
+    
+    
     #2) Histogram plot of "system" type for each FMU 
-    #3) Histogram plot of number of sites under a "managed level" for each FMU / the whole region over time. 
     #4) 
     
 if __name__ == "__main__":
-    FMUtst = main()
+    FMUtst,FMUshp = main()
      
     
     
