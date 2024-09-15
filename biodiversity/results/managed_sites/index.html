@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin: 20px;
+        }
+        iframe {
+            width: 100%;
+            height: 90vh;
+            border: none;
+        }
+    </style>
+    <script>
+        function updateIframe() {
+            const dropdown = document.getElementById('dropdown').value;
+            const iframe = document.getElementById('iframe');
+            const fileMap = {
+                'All': 'managed_sites_All.html',
+                'Forest': 'managed_sites_Forest.html',
+                'Wetland': 'managed_sites_Wetland.html',
+                'Coastal': 'managed_sites_Coastal.html'
+            };
+
+            iframe.src = fileMap[dropdown];
+        }
+
+        window.onload = function() {
+            updateIframe();
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div>
+            <label for="dropdown">Please select the type of managed site:</label>
+            <select id="dropdown" onchange="updateIframe()">
+                <option value="All" selected>All</option>
+                <option value="Forest">Forest</option>
+                <option value="Wetland">Wetland</option>
+                <option value="Coastal">Coastal</option>
+            </select>
+        </div>
+    </div>
+
+    <iframe id="iframe" src="managed_sites_All.html"></iframe>
+</body>
+</html>

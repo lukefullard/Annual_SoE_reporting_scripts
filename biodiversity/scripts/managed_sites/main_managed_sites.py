@@ -9,6 +9,7 @@ Created on Fri Aug 23 11:07:32 2024
 import pandas as pd
 import geopandas as gpd
 import copy
+import os
 from shapely.geometry import Polygon
 
 
@@ -167,6 +168,11 @@ def main():
     from settings import load_settings
     from plotting_managed_sites import plot_bar_chart
     from mapping_functions import make_a_map
+    
+    base_dir = os.getcwd()
+    parent_dir = os.path.abspath(os.path.join(base_dir, "../.."))
+    results_dir = os.path.join(parent_dir, "results", "managed_sites")
+    
     #load settings
     settings = load_settings()
     
@@ -181,15 +187,33 @@ def main():
     # FMUshp = dict_sitelayers.get(
     #                              settings.get("FMUShpFile "))
     FMUlevel_sites= spJoin_GetFMU(gdf,FMUshp)
+    FMUlevel_sites = FMUlevel_sites.to_crs(4326)
+    map_centroid_y = FMUlevel_sites.centroid.y.mean() 
+    map_centroid_x = FMUlevel_sites.centroid.x.mean()
     
-    #make map
-    make_a_map(FMUlevel_sites,
-                   FMUshp,
-                   settings,
-                   'test.html',
-                   cluster_to_centroids = True,
-                   cluster_name_column_gdf  = settings.get('fmu_name_column'),
-                   )
+    #we only want managed sites, so get rid of the lower level sites
+    FMUlevel_sites = FMUlevel_sites.loc[FMUlevel_sites[settings.get('management_level_column')] >= settings.get('min_HRC_manage_level')].reset_index(drop=True)
+    
+    #make maps
+    systems = [['All'],['Wetland'],['Forest','Forest '],['Coastal']]
+    for system_j in systems:
+        print(f'working on {system_j}')
+        if system_j == ['All']:
+            print('using all the data...')
+            temp_data = copy.deepcopy(FMUlevel_sites)
+        else:
+            print('filtered data to system type...')
+            temp_data = FMUlevel_sites.loc[FMUlevel_sites[settings.get('system_type_column')].isin(system_j)].reset_index(drop=True) 
+        make_a_map(temp_data,
+                       FMUshp,
+                       settings,
+                       os.path.join(results_dir, f'managed_sites_{system_j[0]}.html'),
+                       map_centroid_y,
+                       map_centroid_x,
+                       cluster_to_centroids = True,
+                       cluster_name_column_gdf  = settings.get('fmu_name_column'),
+                       filter_text = system_j[0]
+                       )
     
     
     return FMUlevel_sites,FMUshp

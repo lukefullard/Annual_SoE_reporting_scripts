@@ -27,19 +27,37 @@ def load_geodb  (settings:  dict,
 
     '''
     
-    gdb_dict ={}
+    gdb_ecotype ={}
     for layeri in settings.get('layers') :
         gdf = gpd.read_file(settings.get("gdb_file"), layer = layeri)
-        gdb_dict.update({layeri : gdf})
+        gdb_ecotype.update({layeri : gdf})
     
     
-    return gdb_dict 
+    return gdb_ecotype 
+#################################################################################################################
+#################################################################################################################
+
+def Add_HighLevel_Classifcation (gdb_ecotype : GeoDataFrame)  :
+    '''
+    
+
+    Parameters
+    ----------
+    gdb_dict : GeoDataFrame
+        Orginial gdb with polygons showing ecosystem type in the region
+    Returns
+    -------
+   geodataframe with high level classification 
+
+    '''
+    
+    
 #################################################################################################################
 #################################################################################################################
 #################################################################################################################    
 def getFMUFlie (settings: dict,
-                
                 ):
+    
     '''
     
    Parameters
@@ -118,9 +136,12 @@ def main():
     dict_sitelayers  = load_geodb(settings)
     
     #load gdf of interest here - this will give us the first layer in the list. 
-    gdf = dict_sitelayers.get(
+    gdf_ecotype = dict_sitelayers.get(
                               settings.get("layers")[0]
                              )
+    
+    Add_HighLevel_Classifcation(gdf_ecotype)
+    
     FMUshp = getFMUFlie (settings)
     
     
