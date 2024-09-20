@@ -204,7 +204,7 @@ def make_map(fmu_shapes          : gpd.GeoDataFrame,
     '''
     
     #make basemap
-    m = make_basemap(settings,fmu_shapes.centroid.y.mean(),fmu_shapes.centroid.x.mean())
+    m = make_basemap(settings,site_data.centroid.y.mean(),site_data.centroid.x.mean())
     
     #add polygon
     m = add_and_simplify_region_polygons(m,fmu_shapes,settings,settings.get('geospatial_settings').get('geospatial_files').get('fmu').get('name'))
