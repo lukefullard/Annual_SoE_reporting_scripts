@@ -5,3 +5,4 @@ surface_water_quality/scripts/state_maps/settings.py
 *.pyc
 biodiversity/scripts/managed_sites/settings_ET_HT.py
 biodiversity/scripts/managed_sites/test.html
+groundwater/scripts/state_maps/settings.py

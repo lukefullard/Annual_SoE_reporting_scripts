@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groundwater quality</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            margin: 20px;
+        }
+        iframe {
+            width: 100%;
+            height: 90vh;
+            border: none;
+        }
+    </style>
+    <script>
+        function updateIframe() {
+            const contaminant = document.getElementById('contaminant').value;
+            const iframe = document.getElementById('iframe');
+            const fileMap = {
+                'Arsenic': 'Arsenic.html',
+                'E. coli': 'E coli.html',
+                'Nitrate': 'Nitrate.html'
+            };
+
+            iframe.src = fileMap[contaminant];
+        }
+
+        window.onload = function() {
+            updateIframe(); // Load default iframe on page load
+        };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div>
+            <label for="contaminant">Select Contaminant:</label>
+            <select id="contaminant" name="contaminant" onchange="updateIframe()">
+                <option value="Arsenic">Arsenic</option>
+                <option value="E. coli" selected>E. coli</option>
+                <option value="Nitrate">Nitrate</option>
+            </select>
+        </div>
+    </div>
+
+    <iframe id="iframe" src="Ecoli.html"></iframe>
+</body>
+</html>
