@@ -11,7 +11,7 @@ import pandas as pd
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import copy
-import folium as fl
+import folium 
 
 
 def load_geodb  (settings:  dict,
@@ -27,34 +27,44 @@ def load_geodb  (settings:  dict,
 
     '''
     
-    gdb_ecotype ={}
+    gdb_dict ={}
     for layeri in settings.get('layers') :
         gdf = gpd.read_file(settings.get("gdb_file"), layer = layeri)
-        gdb_ecotype.update({layeri : gdf})
+        gdb_dict.update({layeri : gdf})
     
     
-    return gdb_ecotype 
-#################################################################################################################
-#################################################################################################################
-
-def Add_HighLevel_Classifcation (gdb_ecotype : GeoDataFrame)  :
-    '''
-    
-
-    Parameters
-    ----------
-    gdb_dict : GeoDataFrame
-        Orginial gdb with polygons showing ecosystem type in the region
-    Returns
-    -------
-   geodataframe with high level classification 
-
-    '''
-    
-    
+    return gdb_dict
 #################################################################################################################
 #################################################################################################################
 #################################################################################################################    
+def getsubset_GDB (gdb_ET: gpd.geodataframe,
+                ) -> gpd.geodataframe:
+    
+   '''
+   Parameters
+    ----------
+    settings : dict
+        DESCRIPTION.
+     : TYPE
+        DESCRIPTION.
+        
+    The function to get the subset of the geodataframe of ET 
+    Returns
+    -------
+    data frame 
+
+    '''    
+    #get high level classification of ET as dataframe 
+   ET_sub = gdb_ET[['Ecosystem_Type','geometry', 'ScheduleF_Habitat','ScheduleF_Threat']]
+   
+   
+   return  ET_sub
+#################################################################################################################
+#################################################################################################################
+#################################################################################################################
+   
+
+
 def getFMUFlie (settings: dict,
                 ):
     
@@ -78,10 +88,94 @@ def getFMUFlie (settings: dict,
     FMUshpdf= gpd.read_file(settings.get("FMUShpFile"))
     
     return FMUshpdf
+#################################################################################################################
+#################################################################################################################
+#################################################################################################################    
+def getHighLevelETClassFile (settings: dict
+                ):
+    '''
+    
+   Parameters
+    ----------
+    settings : dict
+        DESCRIPTION.
+     : TYPE
+        DESCRIPTION.
+        
+    The function loads the excelfile with high level classification of ET and corresponding Ecosystem Types
+
+    Returns
+    -------
+    data frame 
+
+    '''    
+    #get high level classification of ET as dataframe 
+    HL_excel = pd.read_excel(settings.get("HighLevelClass_ET_file"))
+    HL_df = pd.DataFrame(HL_excel)
+    
+    
+    return  HL_df
 
 #################################################################################################################
 #################################################################################################################
-#################################################################################################################     
+#################################################################################################################    
+def mapping_HLET (HL_df: pd.DataFrame,
+                  gdf_ET_sub : gpd.GeoDataFrame, 
+                ) -> pd.DataFrame:
+    
+    '''
+    
+   Parameters
+    ----------
+    settings : dict
+        DESCRIPTION.
+     : TYPE
+        DESCRIPTION.
+        
+    The function to map high level ET in the geodataframe - it first creates a dictionary , splits coloumn
+    Returns
+    -------
+    data frame 
+
+    '''    
+    
+    # Create a mapping Series from mapping_df
+    mapping_df = HL_df.set_index('ET')['HighLevelClass']
+    mapping_dict = mapping_df.to_dict()
+    
+    #split coloumn 
+    gdf_ET_sub['ETsubstr'] = gdf_ET_sub['Ecosystem_Type'].str.split(',', expand = True)[0]
+    
+    #get high level classification of ET as dataframe 
+    gdf_ET_sub['HLClass'] = gdf_ET_sub['ETsubstr'].str[:2].map(mapping_dict)
+    return gdf_ET_sub
+
+#################################################################################################################
+#################################################################################################################
+################################################################################################################# 
+
+def style_function(feature):
+   
+    '''
+   Parameters
+    ----------
+    settings : feature
+        DESCRIPTION.
+     : TYPE
+        DESCRIPTION.
+        
+    The function to map high level ET in the geodataframe - it first creates a dictionary , splits coloumn
+    Returns
+    -------
+    data frame 
+'''
+  
+    category = feature['properties']['']
+
+
+#################################################################################################################
+#################################################################################################################
+#################################################################################################################       
 def  spJoin_GetFMU (gdfi   ,
                     FMUshpi 
                     ) :
@@ -132,7 +226,7 @@ def main():
     #load settings
     settings = load_settings_ET()
     
-    #load geodata
+    #load layers/dictionary
     dict_sitelayers  = load_geodb(settings)
     
     #load gdf of interest here - this will give us the first layer in the list. 
@@ -140,20 +234,43 @@ def main():
                               settings.get("layers")[0]
                              )
     
-    Add_HighLevel_Classifcation(gdf_ecotype)
+    #subset of geodatabase
+    gdf_ecotype_sub = getsubset_GDB(gdf_ecotype)
     
-    FMUshp = getFMUFlie (settings)
-    
-    
+    #Get High level ET classification file 
    
-   
-    # FMUshp = dict_sitelayers.get(
-    #                              settings.get("FMUShpFile "))
-    # FMUlevel_sites= spJoin_GetFMU(gdf,FMUshp)
-    FMUlevel_sites_test = spJoin_GetFMU(gdf,FMUshp)
+    hL_ET_df = getHighLevelETClassFile(settings)
     
-  
-    #Plot the GeoDF
+    #Perform mapping
+    gdf_ecotype_sub = mapping_HLET(hL_ET_df, gdf_ecotype_sub)
+    
+    #Making Maps 
+    m = folium.Map(location=[-40.006, 175.94], zoom_start=9, tiles="CartoDB positron")
+
+    #change the crs
+    gdf_ecotype_reproj = gdf_ecotype_sub.to_crs(epsg=4326)
+    
+    
+    
+    
+    sim_geo = folium.GeoJson(
+                        gdf_ecotype_reproj,
+                        style_function = lambda x : {
+                            'color' : 'none'
+                            }
+                        ).add_to(m)
+    
+    m.save(r'\\ares\Science\Sivee\test1234.html')
+    
+    
+        
+    for _, r in gdf_ecotype_reproj.iterrows():
+        sim_geo = gdf_ecotype_reproj.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
+        geo_j = sim_geo.to_json() #converting to geojson
+        # geo_j = folium.GeoJson(data=geo_j, style_function = style_function)
+      
+        folium.Popup(r["Mapped_Value"]).add_to(geo_j)
+        geo_j.add_to(m)
     
    
     
