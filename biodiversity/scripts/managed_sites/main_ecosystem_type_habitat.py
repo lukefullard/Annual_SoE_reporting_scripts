@@ -154,23 +154,24 @@ def mapping_HLET (HL_df: pd.DataFrame,
 #################################################################################################################
 ################################################################################################################# 
 
-def style_function(feature):
-   
-    '''
-   Parameters
-    ----------
-    settings : feature
-        DESCRIPTION.
-     : TYPE
-        DESCRIPTION.
-        
-    The function to map high level ET in the geodataframe - it first creates a dictionary , splits coloumn
-    Returns
-    -------
-    data frame 
-'''
-  
-    category = feature['properties']['']
+# Define a function to choose colors based on class
+def get_colorDict(hl_df):
+    
+    # create a dictionary of colours from  hl_ET_df 
+    color_map = hl_df.set_index('HighLevelClass')['Color'].to_dict()
+    
+    return color_map 
+
+#################################################################################################################
+#################################################################################################################
+################################################################################################################# 
+
+# Define a function to choose colors based on class
+def get_color(class_name,color_map):
+    
+    # create a dictionary of colours from  hl_ET_df 
+    
+    return color_map.get(class_name, 'orange')  # Default to orange if class not found
 
 
 #################################################################################################################
@@ -250,27 +251,43 @@ def main():
     #change the crs
     gdf_ecotype_reproj = gdf_ecotype_sub.to_crs(epsg=4326)
     
+
+    
+    #convert to geojson object
+    json_ecotype = gdf_ecotype_reproj.to_json()
+    
+    colormap  = get_colorDict(hL_ET_df)
+    # color = get_color(colormap)
     
     
     
-    sim_geo = folium.GeoJson(
-                        gdf_ecotype_reproj,
+    
+    map_ecotype_folium = folium.GeoJson(
+                        json_ecotype,
                         style_function = lambda x : {
+                            'fillColor': get_color(x['properties']['HLClass'],colormap),
                             'color' : 'none'
-                            }
+                            },
+                        tooltip=folium.GeoJsonTooltip(fields=['Ecosystem_Type', 'HLClass'], aliases=['Ecosystem Type', 'High level ET Class'])
                         ).add_to(m)
     
-    m.save(r'\\ares\Science\Sivee\test1234.html')
+    m.save(r'\\ares\Science\Sivee\test_withoutFor.html')
     
     
-        
+   
+
+
     for _, r in gdf_ecotype_reproj.iterrows():
-        sim_geo = gdf_ecotype_reproj.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
+        sim_geo = gpd.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
         geo_j = sim_geo.to_json() #converting to geojson
-        # geo_j = folium.GeoJson(data=geo_j, style_function = style_function)
-      
-        folium.Popup(r["Mapped_Value"]).add_to(geo_j)
+        geo_j = folium.GeoJson(data=geo_j, 
+                               style_function=lambda x: { 
+                                   'fillColor': get_color(x['properties']['HLClass'],colormap),
+                                   'color' : 'none'
+                                   })
+        folium.Popup(r["Label"]).add_to(geo_j)
         geo_j.add_to(m)
+        
     
    
     
