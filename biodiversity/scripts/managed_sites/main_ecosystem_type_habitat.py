@@ -12,6 +12,7 @@ import geopandas as gpd
 import matplotlib.pyplot as plt
 import copy
 import folium 
+from branca.element import Template, MacroElement, Element, IFrame
 
 
 def load_geodb  (settings:  dict,
@@ -222,10 +223,13 @@ def  spJoin_GetFMU (gdfi   ,
 
 def main():
     
-    from settings_ET_HT import load_settings_ET
+    from settings_ET_HT import load_settings_ET,load_legend_template 
+    
     
     #load settings
     settings = load_settings_ET()
+    
+    
     
     #load layers/dictionary
     dict_sitelayers  = load_geodb(settings)
@@ -246,10 +250,11 @@ def main():
     gdf_ecotype_sub = mapping_HLET(hL_ET_df, gdf_ecotype_sub)
     
     #Making Maps 
-    m = folium.Map(location=[-40.006, 175.94], zoom_start=9, tiles="CartoDB positron")
+    m = folium.Map(location=[-40.006, 175.94], zoom_start=8, tiles="CartoDB positron")
 
     #change the crs
     gdf_ecotype_reproj = gdf_ecotype_sub.to_crs(epsg=4326)
+    gdf_ecotype_reproj['geometry'] = gdf_ecotype_reproj['geometry'].simplify(tolerance=0.005, preserve_topology=True)
     
 
     
@@ -260,7 +265,7 @@ def main():
     # color = get_color(colormap)
     
     
-    
+    legend_html = load_legend_template (hL_ET_df,settings.get("hLClass_coloumn"),settings.get("color_coloumn"))
     
     map_ecotype_folium = folium.GeoJson(
                         json_ecotype,
@@ -270,23 +275,25 @@ def main():
                             },
                         tooltip=folium.GeoJsonTooltip(fields=['Ecosystem_Type', 'HLClass'], aliases=['Ecosystem Type', 'High level ET Class'])
                         ).add_to(m)
-    
+    macro = MacroElement()
+    macro._template = Template(legend_html)  
+    m.get_root().add_child(macro)
     m.save(r'\\ares\Science\Sivee\test_withoutFor.html')
     
     
    
 
 
-    for _, r in gdf_ecotype_reproj.iterrows():
-        sim_geo = gpd.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
-        geo_j = sim_geo.to_json() #converting to geojson
-        geo_j = folium.GeoJson(data=geo_j, 
-                               style_function=lambda x: { 
-                                   'fillColor': get_color(x['properties']['HLClass'],colormap),
-                                   'color' : 'none'
-                                   })
-        folium.Popup(r["Label"]).add_to(geo_j)
-        geo_j.add_to(m)
+    # for _, r in gdf_ecotype_reproj.iterrows():
+    #     sim_geo = gpd.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
+    #     geo_j = sim_geo.to_json() #converting to geojson
+    #     geo_j = folium.GeoJson(data=geo_j, 
+    #                            style_function=lambda x: { 
+    #                                'fillColor': get_color(x['properties']['HLClass'],colormap),
+    #                                'color' : 'none'
+    #                                })
+    #     folium.Popup(r["Label"]).add_to(geo_j)
+    #     geo_j.add_to(m)
         
     
    
