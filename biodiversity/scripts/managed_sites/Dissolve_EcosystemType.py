@@ -65,7 +65,33 @@ def getsubset_GDB (gdb_ET: gpd.geodataframe,
 #################################################################################################################
 #################################################################################################################
    
+def getDissolvedPoly (gdb_ET : gpd.geodataframe,
+                      colname : str
+                )-> gpd.geodataframe:
+    
+    '''
+    
+   Parameters
+    ----------
+    settings : dict
+        DESCRIPTION.
+     : TYPE
+        DESCRIPTION.
+        
+    The function loads FMU shape file : Shape file having showing all FMU polygons
 
+    Returns
+    -------
+    shape file 
+
+    '''    
+    #get shape file by reading 
+    
+    DissShpGpd = gdb_ET.dissolve(by=colname)
+    return DissShpGpd
+#################################################################################################################
+#################################################################################################################
+#################################################################################################################   
 
 def getFMUFlie (settings: dict,
                 ):
@@ -249,6 +275,14 @@ def main():
     
     #Perform mapping
     gdf_ecotype_sub = mapping_HLET(hL_ET_df, gdf_ecotype_sub)
+
+    #Get dissolved map 
+    dissShpHL= getDissolvedPoly(gdf_ecotype_sub,'HLClass')
+    dissShpHL = dissShpHL.reset_index()
+    
+    # saving geodataframes (mapped HL Class) and Dissolved ShhHL DF as shape file
+    dissShpHL.to_file(r"\\gisdata\Users\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\Biodiversity_SOE_2_6Sep\Diss_ET_HLClass.shp")
+    gdf_ecotype_sub.to_file(r"\\gisdata\Users\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\Biodiversity_SOE_2_6Sep\MappingHL.shp")
     
     #Making Maps 
     m = folium.Map(location=[-40.006, 175.94], zoom_start=8, tiles="CartoDB positron")
@@ -257,11 +291,16 @@ def main():
     gdf_ecotype_reproj = gdf_ecotype_sub.to_crs(epsg=4326)
     gdf_ecotype_reproj['geometry'] = gdf_ecotype_reproj['geometry'].simplify(tolerance=0.005, preserve_topology=True)
     
+    gdf_diss_ecotype_reproj= dissShpHL.to_crs(epsg=4326)
+    gdf_diss_ecotype_reproj['geometry'] = gdf_diss_ecotype_reproj['geometry'].simplify(tolerance=0.005, preserve_topology=True)
 
     
     #convert to geojson object
     json_ecotype = gdf_ecotype_reproj.to_json()
+    json_diss_ecotype = gdf_diss_ecotype_reproj.to_json()
     
+    
+    ##### Get Map ##
     colormap  = get_colorDict(hL_ET_df)
     # color = get_color(colormap)
     
@@ -281,6 +320,19 @@ def main():
     m.get_root().add_child(macro)
     m.save(r'\\ares\Science\Sivee\test_withoutFor.html')
     
+    ### Get Map ###
+    map_ecotype_folium = folium.GeoJson(
+                        json_diss_ecotype,
+                        style_function = lambda x : {
+                            'fillColor': get_color(x['properties']['HLClass'],colormap),
+                            'color' : 'none'
+                            },
+                        tooltip=folium.GeoJsonTooltip(fields=['Ecosystem_Type', 'HLClass'], aliases=['Ecosystem Type', 'High level ET Class'])
+                        ).add_to(m)
+    # macro = MacroElement()
+    # macro._template = Template(legend_html)  
+    # m.get_root().add_child(macro)
+    m.save(r'\\ares\Science\Sivee\test_Diss.html')
     
    
 
