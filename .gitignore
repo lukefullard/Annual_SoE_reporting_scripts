@@ -6,3 +6,5 @@ surface_water_quality/scripts/state_maps/settings.py
 biodiversity/scripts/managed_sites/settings_ET_HT.py
 biodiversity/scripts/managed_sites/test.html
 groundwater/scripts/state_maps/settings.py
+surface_water_quality/scripts/swimmability/settings.py
+surface_water_quality/scripts/swimmability/data/~$Kai Iwi_Swimmability_2024.xlsx

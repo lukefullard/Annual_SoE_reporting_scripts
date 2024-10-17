@@ -1,0 +1,3 @@
+Plot map of swim sites. Clours of dots  = majority class (swimmable, caution, unswimmable).
+Click on FMU - bar chart of swimmability
+Click on site - donut of swimmability.
