@@ -309,7 +309,7 @@ def make_map(fmu_data            : gpd.GeoDataFrame,
     m = add_points(m,settings)
     #add popup to points, donut graph
     #add legend :)
-    m.save("test.html")
+    m.save(save_name)
     
 
     
