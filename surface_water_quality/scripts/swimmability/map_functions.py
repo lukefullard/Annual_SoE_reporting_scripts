@@ -186,7 +186,6 @@ def add_points(m              : folium.Map,
         
         current_meta_data = site_meta_data.loc[site_meta_data[settings.get("meta_data_site_column")] == site_corrected_name].reset_index(drop=True)
         
-        print('HERE: make current_meta_data a geodataframe TO DO')
         current_meta_data_gdf = gpd.GeoDataFrame(
                 current_meta_data, geometry=gpd.points_from_xy(current_meta_data[settings.get('x_column')], current_meta_data[settings.get('y_column')]), crs=f"EPSG:{settings.get('site_epsg_code')}"
             )
@@ -237,7 +236,7 @@ def add_fmu_shape(m              : folium.Map,
         html_content = row['html'] if row['html'] is not None else "<p>No data available</p>"
         
         # Step 2: Create an IFrame with the HTML content
-        iframe = IFrame(html=html_content, width=900, height=row['height'])  # Adjust the size as needed
+        iframe = IFrame(html=html_content, width=950, height=row['height'])  # Adjust the size as needed
         
         # Step 3: Create a popup from the IFrame
         popup = folium.Popup(iframe)
@@ -306,15 +305,16 @@ def make_map(fmu_data            : gpd.GeoDataFrame,
     
     
     #add points to map with colours
-    m = add_points(m,settings)
     #add popup to points, donut graph
+    m = add_points(m,settings)
+    
     #add legend :)
     m.save(save_name)
     
 
     
-    # macro = MacroElement()
-    # macro._template = Template(legend_template)  
+    macro = MacroElement()
+    macro._template = Template(settings.get('map_settings').get('map_legend_templates').get('grade_template'))   
     # folium.LayerControl(collapsed=False).add_to(m) 
     
     # Element(
@@ -324,5 +324,6 @@ def make_map(fmu_data            : gpd.GeoDataFrame,
     #     '</style>'
     # ).add_to(m.get_root().header)
     
-    # m.get_root().add_child(macro)  
-    # m.save(save_name)
+    m.get_root().add_child(macro)  
+    
+    m.save(save_name)
