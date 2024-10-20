@@ -62,9 +62,7 @@ if __name__ == '__main__':
     site_meta_data = pd.read_excel(settings.get('lawa_sites_meta_data_file'))
     
     #make map
-    make_map(fmu_gdf,"",settings)
-    
-    print('need to add title to the map with the fmu name and date range')
-    print('need to fix the no sample colour')
+    make_map(fmu_gdf,os.path.join(results_dir, "recent_swimmability_map.html"),settings)
+
     
         

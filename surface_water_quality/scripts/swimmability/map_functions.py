@@ -5,52 +5,14 @@ import pickle
 import os
 import folium
 import geopandas as gpd
+from thefuzz import fuzz
 from branca.element import Template, MacroElement, Element, IFrame
 from folium.plugins import Geocoder, FeatureGroupSubGroup
-
+from settings import parameter_gradings
 ####################################################################################
 ####################################################################################
 ####################################################################################
-def parameter_gradings():
-    param_grading_dict = {
-        'ENTEROC': {'cutoffs': [0, 140, 280, 100000],
-                              'namez': ['Green', 'Amber', 'Red']},
-        #
-        'ECOLI': {'cutoffs': [0, 260, 540, 100000],
-                                 'namez': ['Green', 'Amber', 'Red']},
-        #
-        'CYANOSTAT': {'cutoffs': [0, 1, 2, 3, 100000],
-                                       'namez': ['No Observations', 'Green', 'Amber', 'Red']}
-    }
 
-    grading_order_dict = {'Green': 1,
-                          'Amber': 2,
-                          'Red': 3,
-                          'No Observations': -1,
-                          'No Sample': -2}
-
-    reverse_grading_order_dict = {1: 'Green',
-                                  2: 'Amber',
-                                  3: 'Red',
-                                  -1: 'No Observations',
-                                  -2: 'No Sample'}
-    
-    cmap = {
-        'Green'                   : "#70ad47",
-        'Amber'                   : "#ed7d31",
-        'Red'                     : "#ff0000",
-        'No Observations'         : "#a6a6a6",
-        'No Sample'               : "#d3d3d3"
-    }
-    
-    name_map = {
-        'ENTEROC'                      : 'Enterococci',
-        'ECOLI'                        : 'E. coli',
-        'CYANOSTAT'                    : 'Cyanobacteria',
-        'Swimmability'                 : 'Swimmability'
-        }
-
-    return param_grading_dict, grading_order_dict, reverse_grading_order_dict,cmap,name_map
 
 
 ####################################################################################
@@ -60,6 +22,22 @@ def parameter_gradings():
 ###############################################################################
 ###############################################################################
 def add_zone_bar_chart(fmu_gdf, settings):
+    '''
+    Function to add a bar chart as plain html into a geo/dataframe
+
+    Parameters
+    ----------
+    fmu_gdf : gpd.GeoDataFrame
+        DESCRIPTION. Geodataframe to add html to.
+    settings : dict
+        DESCRIPTION. Settings dictionary
+
+    Returns
+    -------
+    fmu_gdf : gpd.GeoDataFrame
+        DESCRIPTION.  Geodataframe with added html.
+
+    '''
     param_grading_dict, grading_order_dict, reverse_grading_order_dict,cmap,name_map = parameter_gradings()
     param_grading_dict.update({'Swimmability':{'namez' :  ['Green', 'Amber', 'Red']}})
     colors = [cmap[x] for x in list(cmap.keys()) if x in param_grading_dict["Swimmability"]['namez']]
@@ -68,7 +46,8 @@ def add_zone_bar_chart(fmu_gdf, settings):
     
     fmu_plots = []
     fmu_height = []
-    for fmu_j in settings.get("fmu_files").keys():
+    fmu_name = []
+    for fmu_j in fmu_gdf[settings.get('geospatial_settings').get('geospatial_files').get('fmu').get('name')]:
         #read fmu data
         fmu_data = pd.read_excel(os.path.join(settings.get("data_dir"), settings.get("fmu_files").get(fmu_j)))
         
@@ -78,8 +57,8 @@ def add_zone_bar_chart(fmu_gdf, settings):
         #melt data
         dfplot=pd.melt(fmu_data.reset_index(),id_vars=settings.get("site_column"),value_vars = param_grading_dict["Swimmability"]['namez'] + ['No Sample'],var_name='State', value_name="value")
         
-        P_H = max(int(np.ceil(1000*(len(list(set(fmu_data[settings.get("site_column")])))/36))),500)
-        fig = px.bar(dfplot, x="value",y=settings.get("site_column"), color = 'State', color_discrete_sequence=colors, width=1000, height=P_H, orientation='h',
+        P_H = max(int(np.ceil(900*(len(list(set(fmu_data[settings.get("site_column")])))/36))),450)
+        fig = px.bar(dfplot, x="value",y=settings.get("site_column"), color = 'State', color_discrete_sequence=colors, width=900, height=P_H, orientation='h',
                       category_orders={'State' : list(grading_order_dict.keys())},
                       title=f"{fmu_j} swimmability: {settings.get('contact_rec_season_text')}",)
 
@@ -108,6 +87,7 @@ def add_zone_bar_chart(fmu_gdf, settings):
         #save graphs in correct location
         fmu_plots.append(fig.to_html(full_html=False,include_plotlyjs='cdn'))
         fmu_height.append(P_H)
+        fmu_name.append(fmu_j)
         
     
     fmu_gdf['html'] =  fmu_plots   
@@ -119,40 +99,112 @@ def add_zone_bar_chart(fmu_gdf, settings):
 ###############################################################################
 ###############################################################################
 ###############################################################################
-def make_donut_plot(df           : pd.DataFrame,
-                    fmu_name     : str,
-                    topic_column :str,
-                    settings     : dict) -> str:
+def make_donut_plot(df_row           : pd.Series,
+                    title_text       : str,
+                    colour_map       : dict,
+                    settings         : dict) -> str:
     '''
     Function to generate a donut plot of grade distribution in an FMU and output as an html string.
 
     Parameters
     ----------
-    df : pd.DataFrame
-        DESCRIPTION. Input dataframe.
-    fmu_name : str
-        DESCRIPTION. Name of the FMU.
-    topic_column : str
-        DESCRIPTION. Name of the current topic (e.g. MCI, E. coli, etc)
+    df_row : pd.Series
+        DESCRIPTION. Input Series.
+    title_text : str
+        DESCRIPTION. text for the title
+    colour_map : dict
+        DESCRIPTION. Colour mapping dictionary.
     settings : dict
         DESCRIPTION. Settings dictionary.
 
     Returns
     -------
     str
-        DESCRIPTION. html sting for the figure of the grade distribution in an FMU.
+        DESCRIPTION. html sting for the pie chart.
 
     '''
-    df = df.loc[df[topic_column] != 'No Data']
-    df_pie = df.groupby([topic_column])[topic_column].count().reset_index(name = 'count')
+    subset_columns = [settings.get('green_column'),settings.get('amber_column'),settings.get('red_column'),settings.get('no_sample_column')]
+    values = df_row[subset_columns]
     
-    fig = px.pie(df_pie, values='count', names=topic_column, color=topic_column,
-                 color_discrete_map = settings.get('map_settings').get('nof_grade_mapping'),
-                 title=f"{fmu_name} - {topic_column}",
+    df_pie = pd.DataFrame({
+    'Category': values.index,  # Labels (Green, Amber, etc.)
+    'Values': values.values    # Corresponding values (52.0, 28.0, etc.)
+    })
+    
+    fig = px.pie(df_pie, values='Values', names='Category', color='Category',
+                 color_discrete_map = colour_map,
+                 title=title_text,
                  hole = 0.5)
-    fig.update_layout(legend_title_text='Grade')
+    fig.update_layout(legend_title_text='Swimmability grade')
     return fig.to_html(full_html=False,include_plotlyjs='cdn')
 
+###############################################################################
+###############################################################################
+###############################################################################
+def find_closest_name(name      : str, 
+                      name_list : list) -> str:
+    score = 0
+    site = ''
+    for site_j in name_list:
+        new_score = fuzz.ratio(name, site_j)
+        if new_score > score:
+            score = new_score
+            site = site_j
+            
+    return site       
+
+###############################################################################
+###############################################################################
+###############################################################################
+
+def add_points(m              : folium.Map,
+               settings       : dict,) -> folium.Map:
+    param_grading_dict, grading_order_dict, reverse_grading_order_dict,cmap,name_map = parameter_gradings()
+    param_grading_dict.update({'Swimmability':{'namez' :  ['Green', 'Amber', 'Red']}})
+    colors = [cmap[x] for x in list(cmap.keys()) if x in param_grading_dict["Swimmability"]['namez']]
+    colors.append(cmap.get('No Sample'))
+    
+    
+    data_points = pd.read_excel(os.path.join(settings.get("data_dir"), settings.get("all_site_results")))
+    site_meta_data = pd.read_excel(settings.get("lawa_sites_meta_data_file"))
+    
+    subset_columns = [settings.get('green_column'),settings.get('amber_column'),settings.get('red_column'),settings.get('no_sample_column')]
+    
+    #iterate through the sites...
+    for iter_j,row_j in data_points.iterrows():
+        site_name = row_j[settings.get('site_column')]
+        site_corrected_name = find_closest_name(site_name,[str(x) for x in site_meta_data[settings.get("meta_data_site_column")].to_list()])
+        
+        html_popup = make_donut_plot(row_j,
+                            f"{site_name} <br> swimmability: {settings.get('contact_rec_season_text')}",
+                            cmap,
+                            settings) 
+        iframe = IFrame(html=html_popup, width=450, height=450)  # Adjust the size as needed
+        popup = folium.Popup(iframe)
+
+        max_colour  = pd.to_numeric(row_j[subset_columns], errors='coerce').idxmax()
+        
+        current_meta_data = site_meta_data.loc[site_meta_data[settings.get("meta_data_site_column")] == site_corrected_name].reset_index(drop=True)
+        
+        print('HERE: make current_meta_data a geodataframe TO DO')
+        current_meta_data_gdf = gpd.GeoDataFrame(
+                current_meta_data, geometry=gpd.points_from_xy(current_meta_data[settings.get('x_column')], current_meta_data[settings.get('y_column')]), crs=f"EPSG:{settings.get('site_epsg_code')}"
+            )
+        
+        folium.CircleMarker(
+            location=[current_meta_data_gdf.geometry.y, current_meta_data_gdf.geometry.x],
+            radius=8,
+            color = settings.get('map_settings').get('map_figure_settings').get('linecolor'),
+            weight = 1,
+            fill=True,
+            fill_color=cmap.get(max_colour),
+            fill_opacity=0.9,
+            opacity=1,
+            popup=popup,
+            tooltip=f"<b>{site_name}</b> <br>Predominantly: {name_map.get(max_colour)} <br> <br> Click to see results from most recent monitoring season.",
+        ).add_to(m)
+    
+    return m
 ###############################################################################
 ###############################################################################
 ###############################################################################
@@ -178,14 +230,14 @@ def add_fmu_shape(m              : folium.Map,
 
     '''
     #add FMU outlines
-    fmu_gdf['FMU'] = fmu_gdf[settings.get('geospatial_settings').get('geospatial_files').get('fmu').get('name')] + " (click to see site results in this FMU)"
+    fmu_gdf['FMU'] = "<b>" + fmu_gdf[settings.get('geospatial_settings').get('geospatial_files').get('fmu').get('name')] + "</b><br> (click to see site results in this FMU)"
 
     for idx, row in fmu_gdf.iterrows():
         # Step 1: Check for None and replace with a default value
         html_content = row['html'] if row['html'] is not None else "<p>No data available</p>"
         
         # Step 2: Create an IFrame with the HTML content
-        iframe = IFrame(html=html_content, width=1000, height=row['height'])  # Adjust the size as needed
+        iframe = IFrame(html=html_content, width=900, height=row['height'])  # Adjust the size as needed
         
         # Step 3: Create a popup from the IFrame
         popup = folium.Popup(iframe)
@@ -236,13 +288,11 @@ def make_map(fmu_data            : gpd.GeoDataFrame,
     
     #add in fmu html data
     fmu_data = add_zone_bar_chart(fmu_data, settings)
-    
     #add in fmu shapes
     m = add_fmu_shape(m,fmu_data,settings)
     
     
     # Add custom JavaScript to disable the default outline
-    # Define your custom CSS to disable the default outline
     custom_css = """
     <style>
     path.leaflet-interactive:focus {
@@ -253,6 +303,12 @@ def make_map(fmu_data            : gpd.GeoDataFrame,
     
     # Add the custom CSS to the map
     m.get_root().html.add_child(Element(custom_css))
+    
+    
+    #add points to map with colours
+    m = add_points(m,settings)
+    #add popup to points, donut graph
+    #add legend :)
     m.save("test.html")
     
 
