@@ -83,6 +83,11 @@ def add_zone_bar_chart(fmu_gdf, settings):
         legend_title_text='',
         bargap=0.55,
         plot_bgcolor='rgba(0,0,0,0)')
+        
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=40, b=10),  # Set large right margin and zero left margin
+            autosize=False,                        # Disable autosizing
+        )
 
         #save graphs in correct location
         fmu_plots.append(fig.to_html(full_html=False,include_plotlyjs='cdn'))
