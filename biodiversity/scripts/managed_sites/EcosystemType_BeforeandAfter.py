@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import copy
 import folium 
 import numpy as np
-import ipywidgets as widgets
+#import ipywidgets as widgets
 from folium.plugins import FloatImage
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
@@ -70,6 +70,35 @@ def fix_invalid_geometries(gdf):
    gdf = gdf[gdf['geometry'].notnull()]
     
    return gdf
+#################################################################################################################
+#################################################################################################################
+################################################################################################################# 
+
+def getDissolvedPoly (gdb_ET : gpd.geodataframe,
+                      colname : str
+                )-> gpd.geodataframe:
+    
+    '''
+    
+   Parameters
+    ----------
+    settings : dict
+        DESCRIPTION.
+     : TYPE
+        DESCRIPTION.
+        
+    The function loads FMU shape file : Shape file having showing all FMU polygons
+
+    Returns
+    -------
+    shape file 
+
+    '''    
+    #get shape file by reading 
+    
+    DissShpGpd = gdb_ET.dissolve(by=colname)
+    DissShpGpd  = DissShpGpd.reset_index()
+    return DissShpGpd
 
 #################################################################################################################
 #################################################################################################################
@@ -77,14 +106,35 @@ def fix_invalid_geometries(gdf):
 
 def create_color_mapping(gdf):
     unique_types = gdf['EcosystemType'].str.lower().unique() #Convert to lower case to avoid case sensitivity
-    color_map = {etype: plt.cm.Accent(i / len(unique_types)) for i, etype in enumerate(unique_types)}
+    
+    color_map = {}
+    colormap = plt.cm.tab10  # Choose your colormap
+    
+    for i, etype in enumerate(unique_types):
+        
+        color = colormap(i % colormap.N)  # colormap.N gives the number of colors in the colormap
+        color_map[etype] = rgb_to_hex(color) 
+    
+        # Normalize the index to get a value between 0 and 1 for the colormap
+        # color = plt.cm.Accent(i / num_unique)
+        # color_map[etype] = color
+        
+        
+    # color_map = {etype: plt.cm.Accent(i / len(unique_types) -1) for i, etype in enumerate(unique_types)}
     return color_map
 
 #################################################################################################################
 #################################################################################################################
 #################################################################################################################    
 
-def simplify_geometries (gdf,tolerance = 0.5):
+def rgb_to_hex(rgb):
+    """Convert RGB tuple to hex string."""
+    return '#{:02x}{:02x}{:02x}'.format(int(rgb[0] * 255), int(rgb[1] * 255), int(rgb[2] * 255))
+
+#################################################################################################################
+#################################################################################################################
+#################################################################################################################    
+def simplify_geometries (gdf,tolerance = 10):
     """Simplify the geometries in a GeoDataFrame.
 
    Parameters
@@ -107,33 +157,33 @@ def simplify_geometries (gdf,tolerance = 0.5):
 # #################################################################################################################
 
    
-def add_classToFolium (gdf,m,color_map):
-    """ Add layer to the map """
-    for _,row in gdf.iterrows():
-        class_val = row['EcosystemType'].lower() #Convert to lower case to avoid case sensitivity
-        # sim_geo = gdf.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
+# def add_classToFolium (gdf,m,color_map):
+#     """ Add layer to the map """
+#     for _,row in gdf.iterrows():
+#         class_val = row['EcosystemType'].lower() #Convert to lower case to avoid case sensitivity
+#         # sim_geo = gdf.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
     
-        # gj_dt = gdf.to_json()
+#         # gj_dt = gdf.to_json()
         
-         # Ensure class_val exists in the color map
-        if class_val not in color_map:
-            print(f"Warning: '{class_val}' not found in color mapping.")
-            continue  # Skip this row if class_val is not found
-        #gdf['geometry'] = gdf['geometry'].simplify(tolerance=0.01)
-        geo_j = gdf.to_json() #converting to geojson
-        if row['geometry'] is not None and row['geometry'].is_valid:
-            folium.GeoJson(
-                data=geo_j,  # Pass geometry as a positional argument
-                style_function=lambda x, class_val=class_val: {
-                    'fillColor': matplotlib.colors.rgb2hex(color_map[class_val][:3]),
-                    'color': 'black',
-                    'weight': 1,
-                    'fillOpacity': 0.6
-                },
-                tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
-            ).add_to(m)
-        else:
-            print(f"Warning: Invalid geometry for '{class_val}'.")
+#          # Ensure class_val exists in the color map
+#         if class_val not in color_map:
+#             print(f"Warning: '{class_val}' not found in color mapping.")
+#             continue  # Skip this row if class_val is not found
+#         #gdf['geometry'] = gdf['geometry'].simplify(tolerance=0.01)
+#         #geo_j = gdf.to_json() #converting to geojson
+#         if row['geometry'] is not None and row['geometry'].is_valid:
+#             folium.GeoJson(
+#                 data=gdf,  # Pass geometry as a positional argument
+#                 style_function=lambda x, class_val=class_val: {
+#                     'fillColor': matplotlib.colors.rgb2hex(color_map[class_val][:3]),
+#                     'color': 'black',
+#                     'weight': 1,
+#                     'fillOpacity': 0.6
+#                 },
+#                 tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
+#             ).add_to(m)
+#         else:
+#             print(f"Warning: Invalid geometry for '{class_val}'.")
 
 # #################################################################################################################
 # #################################################################################################################
@@ -145,11 +195,12 @@ def add_classToFolium (gdf,m,color_map):
 #################################################################################################################
 ################################################################################################################# 
 
-# # Define a function to choose colors based on class
-# def get_colorDict(hl_df):
+# Define a function to choose colors based on class
+# def get_colorDict(gdf):
     
+#     unique_types = gdf['EcosystemType'].str.lower().unique() #Convert to lower case to avoid case sensitivity
 #     # create a dictionary of colours from  hl_ET_df 
-#     color_map = hl_df.set_index('HighLevelClass')['Color'].to_dict()
+#     color_map = gdf.set_index('EcosystemType')['Color'].to_dict()
     
 #     return color_map 
 
@@ -159,52 +210,52 @@ def add_classToFolium (gdf,m,color_map):
 
 
 
-def create_interactive_map(gdf_before, gdf_after, color_map,m):
-    """Create an interactive map with layer control to toggle between states."""
+# def create_interactive_map(gdf_before, gdf_after, color_map,m):
+#     """Create an interactive map with layer control to toggle between states."""
     
-    # Create a base map
-    m = folium.Map(location=[-40.006, 175.94], zoom_start=8, tiles="CartoDB positron")
+#     # Create a base map
+#     m = folium.Map(location=[-40.006, 175.94], zoom_start=8, tiles="CartoDB positron")
 
-    # # Convert both GeoDataFrames to GeoJSON
-    # geojson_before = gdf_before.to_json()
-    # geojson_after = gdf_after.to_json()
+#     # # Convert both GeoDataFrames to GeoJSON
+#     # geojson_before = gdf_before.to_json()
+#     # geojson_after = gdf_after.to_json()
     
-    # ClassVal = properties.get('EcosystemType', 'unknown')
-    add_classToFolium(gdf_before,m,color_map)
+#     # ClassVal = properties.get('EcosystemType', 'unknown')
+#     add_classToFolium(gdf_before,m,color_map)
 
     
-    # Add the "Before" layer
-    # folium.GeoJson(
-    #     geojson_before,
-    #     name='Vegetation Cover - Before',
-    #     style_function=lambda x: {
-    #         'fillColor': 'blue',
-    #         'color': 'black',
-    #         'weight': 1,
-    #         'fillOpacity': 0.6
-    #     },
-    #     tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Ecosystem Type'])
-    # ).add_to(m)
+#     # Add the "Before" layer
+#     # folium.GeoJson(
+#     #     geojson_before,
+#     #     name='Vegetation Cover - Before',
+#     #     style_function=lambda x: {
+#     #         'fillColor': 'blue',
+#     #         'color': 'black',
+#     #         'weight': 1,
+#     #         'fillOpacity': 0.6
+#     #     },
+#     #     tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Ecosystem Type'])
+#     # ).add_to(m)
     
     
-    add_classToFolium(gdf_after,m,color_map)
-    # Add the "After" layer
-    # folium.GeoJson(
-    #     geojson_after,
-    #     name='Vegetation Cover - After',
-    #     style_function=lambda x: {
-    #         'fillColor': 'green',
-    #         'color': 'black',
-    #         'weight': 1,
-    #         'fillOpacity': 0.6
-    #     },
-    #     tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Ecosystem Type'])
-    # ).add_to(m)
+#     add_classToFolium(gdf_after,m,color_map)
+#     # Add the "After" layer
+#     # folium.GeoJson(
+#     #     geojson_after,
+#     #     name='Vegetation Cover - After',
+#     #     style_function=lambda x: {
+#     #         'fillColor': 'green',
+#     #         'color': 'black',
+#     #         'weight': 1,
+#     #         'fillOpacity': 0.6
+#     #     },
+#     #     tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Ecosystem Type'])
+#     # ).add_to(m)
 
-    # # Add layer control
-    folium.LayerControl().add_to(m)
+#     # # Add layer control
+#     folium.LayerControl().add_to(m)
 
-    return m
+#     return m
 
 
 
@@ -229,15 +280,24 @@ def main():
     
     #load gdf of interest here - this will give us the first layer in the list. 
     gdf_before = dict_sitelayers.get(settings.get("layers")[1])
-    fix_invalid_geometries(gdf_before)
+    gdf_before_fix = fix_invalid_geometries(gdf_before)
     gdf_after = dict_sitelayers.get(settings.get("layers")[2])
-    fix_invalid_geometries(gdf_after)
+    gdf_after_fix = fix_invalid_geometries(gdf_after)
+    
+    #Dissolve geometry 
+    gdf_before_fix = getDissolvedPoly(gdf_before_fix,'EcosystemType')
+    gdf_after_fix = getDissolvedPoly(gdf_after_fix,'EcosystemType')
     
     #simplify geometry 
     
-    gdf_before = simplify_geometries(gdf_before)
-    gdf_after = simplify_geometries(gdf_after)
+    # gdf_before_sim = simplify_geometries(gdf_before_fix)
+    # gdf_after_sim = simplify_geometries(gdf_after_fix)
+   
     
+    #change the crs
+    gdf_before_reproj = gdf_before_fix.to_crs(epsg=4326)
+    gdf_after_reproj = gdf_after_fix.to_crs(epsg=4326)
+    gdf_after_reproj['geometry'] = gdf_after_reproj['geometry'].simplify(tolerance=1, preserve_topology=True)
     
     # #get the class list 
     # eco_class_types = gdf_before['EcosystemType'].unique()  #get unique classes
@@ -245,44 +305,89 @@ def main():
     # eco_class_num = len(eco_class_types)
     # # colmap = plt.get_cmap('Accent',EcoClassNum)
     
-    color_map = create_color_mapping(gdf_after)
+    color_map = create_color_mapping(gdf_after_reproj)
     
     
     # Create a base map
     m = folium.Map(location=[-40.006, 175.94], zoom_start=8, tiles="CartoDB positron")
     
-    # Convert both GeoDataFrames to GeoJSON
+    # # Convert both GeoDataFrames to GeoJSON
     # geojson_before = gdf_before.to_json()
-    # geojson_after = gdf_after.to_json()
+    geojson_after = gdf_after_reproj.to_json()
     
     
     
-    for _,row in gdf_after.iterrows():
-        class_val = row['EcosystemType'].lower() #Convert to lower case to avoid case sensitivity
-        # sim_geo = gdf.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
     
-        # gj_dt = gdf.to_json()
+    ###########################################################################
+    # 20241101: Luke trying something...
+    # folium.GeoJson(
+    #     data=gdf_after_reproj,  # Pass geometry as a positional argument
+    #     tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
+    # ).add_to(m)
+    ###########################################################################
+    
+    # #20241101: Luke commented this out
+    # for _,row in gdf_after_sim.iterrows():
+    #     class_val = row['EcosystemType'].lower() #Convert to lower case to avoid case sensitivity
+    #     # sim_geo = gdf.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
+    
+    #     # gj_dt = gdf.to_json()
         
-         # Ensure class_val exists in the color map
-        if class_val not in color_map:
-            print(f"Warning: '{class_val}' not found in color mapping.")
-            continue  # Skip this row if class_val is not found
-        #gdf['geometry'] = gdf['geometry'].simplify(tolerance=0.01)
-        geo_j = gdf_after.to_json() #converting to geojson
-        if row['geometry'] is not None and row['geometry'].is_valid:
-            folium.GeoJson(
-                data=geo_j,  # Pass geometry as a positional argument
-                style_function=lambda x, class_val=class_val: {
-                    'fillColor': matplotlib.colors.rgb2hex(color_map[class_val][:3]),
-                    'color': 'black',
-                    'weight': 1,
-                    'fillOpacity': 0.6
-                },
-                tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
-            ).add_to(m)
-        else:
-            print(f"Warning: Invalid geometry for '{class_val}'.")
-            
+    #      # Ensure class_val exists in the color map
+    #     if class_val not in color_map:
+    #         print(f"Warning: '{class_val}' not found in color mapping.")
+    #         continue  # Skip this row if class_val is not found
+    #     #gdf['geometry'] = gdf['geometry'].simplify(tolerance=0.01)
+    #     #geo_j = gdf_after.to_json() #converting to geojson
+    #     if row['geometry'] is not None and row['geometry'].is_valid:
+    #         folium.GeoJson(
+    #             data=gdf_after_sim,  # Pass geometry as a positional argument
+    #             style_function=lambda x, class_val=class_val: {
+    #                 'fillColor': matplotlib.colors.rgb2hex(color_map[class_val][:3]),
+    #                 'color': 'black',
+    #                 'weight': 1,
+    #                 'fillOpacity': 0.6
+    #             },
+    #             tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
+    #         ).add_to(m)
+    #     else:
+    #         print(f"Warning: Invalid geometry for '{class_val}'.")
+    ###########################################################################    
+
+  # added by Sivee - 3:07 pm 1/11/2024
+   
+    for _,row in gdf_after_reproj.iterrows():
+       class_val = row['EcosystemType'].lower()
+       color = color_map.get(class_val, '#fffff')
+       print(color)
+       folium.GeoJson(
+                   data=row.geometry,  # Pass geometry as a positional argument
+                   style_function=lambda x, color = color: {
+                       'fillColor':color,
+                       'color': 'black',
+                       'weight': 0.4,
+                       'fillOpacity': 0.6
+                   },
+                   
+                   tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
+               ).add_to(m)
+       #print(color_map.get(class_val))
+       
+       
+    m.save(r'\\gisdata\Users\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\BeforeAndAfterMaps\interactive_map_1.html')  # Save the map with layers
+
+        
+    # map_ecotype_folium = folium.GeoJson(
+    #                     geojson_after,
+    #                     class_val = row['EcosystemType'].lower(), #Convert to lower case to avoid case sensitivity,
+    #                     style_function = lambda x, class_val = class_val: {
+    #                         'fillColor': color_map[class_val][:3],
+    #                         'color' : 'none'
+    #                         },
+    #                     tooltip=folium.GeoJsonTooltip(fields=['Ecosystem_Type', 'HLClass'], aliases=['Ecosystem Type', 'High level ET Class'])
+    #                     ).add_to(m)    
+    
+    ############################################################################
             
     # #Add the "Before" layer
     # folium.GeoJson(
@@ -325,7 +430,6 @@ def main():
    
     # m = create_interactive_map(gdf_before, gdf_after,color_map,m)
     
-    m.save(r'\\gisdata\Users\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\BeforeAndAfterMaps\interactive_map.html')  # Save the map with layers
 
     
     # # Create color mapping
