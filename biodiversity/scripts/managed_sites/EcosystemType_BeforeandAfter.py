@@ -18,9 +18,10 @@ import folium
 import numpy as np
 #import ipywidgets as widgets
 from folium.plugins import FloatImage
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from branca.element import Template, MacroElement, Element, IFrame
+import leaflet as l
 
 
 def load_geodb  (settings:  dict,
@@ -156,7 +157,13 @@ def simplify_geometries (gdf,tolerance = 10):
 # #################################################################################################################
 # #################################################################################################################
 
-   
+   # Define a function to choose colors based on class
+def get_color(class_name,color_map):
+    
+    # create a dictionary of colours from  hl_ET_df 
+    
+    return color_map.get(class_name, 'orange')  # Default to orange if class not found
+
 # def add_classToFolium (gdf,m,color_map):
 #     """ Add layer to the map """
 #     for _,row in gdf.iterrows():
@@ -189,7 +196,7 @@ def simplify_geometries (gdf,tolerance = 10):
 # #################################################################################################################
 # #################################################################################################################   
 
-   
+       
 
 #################################################################################################################
 #################################################################################################################
@@ -279,7 +286,7 @@ def main():
     dict_sitelayers  = load_geodb(settings)
     
     #load gdf of interest here - this will give us the first layer in the list. 
-    gdf_before = dict_sitelayers.get(settings.get("layers")[1])
+    gdf_before = dict_sitelayers.get(settings.get("layers")[3])  #get the polygon corrected layer
     gdf_before_fix = fix_invalid_geometries(gdf_before)
     gdf_after = dict_sitelayers.get(settings.get("layers")[2])
     gdf_after_fix = fix_invalid_geometries(gdf_after)
@@ -294,10 +301,11 @@ def main():
     # gdf_after_sim = simplify_geometries(gdf_after_fix)
    
     
-    #change the crs
+    #change the crs and simplify
     gdf_before_reproj = gdf_before_fix.to_crs(epsg=4326)
+    gdf_before_reproj['geometry'] = gdf_before_reproj['geometry'].simplify(tolerance=0.001, preserve_topology=True)
     gdf_after_reproj = gdf_after_fix.to_crs(epsg=4326)
-    gdf_after_reproj['geometry'] = gdf_after_reproj['geometry'].simplify(tolerance=1, preserve_topology=True)
+    gdf_after_reproj['geometry'] = gdf_after_reproj['geometry'].simplify(tolerance=0.001, preserve_topology=True)
     
     # #get the class list 
     # eco_class_types = gdf_before['EcosystemType'].unique()  #get unique classes
@@ -305,24 +313,133 @@ def main():
     # eco_class_num = len(eco_class_types)
     # # colmap = plt.get_cmap('Accent',EcoClassNum)
     
-    color_map = create_color_mapping(gdf_after_reproj)
+    color_map_a = create_color_mapping(gdf_after_reproj)
+    color_map_b = create_color_mapping(gdf_before_reproj)
     
     
     # Create a base map
-    m = folium.Map(location=[-40.006, 175.94], zoom_start=8, tiles="CartoDB positron")
+    m = folium.Map(location=[-40.006, 175.94], zoom_start=8,tiles = 'CartoDB Positron' )
     
     # # Convert both GeoDataFrames to GeoJSON
-    # geojson_before = gdf_before.to_json()
+    geojson_before = gdf_before_reproj.to_json()
     geojson_after = gdf_after_reproj.to_json()
     
+   
+     
+    # #Following lines add tile layers which we don't need now. 
     
+    # layer_right = folium.TileLayer('CartoDB Positron')#,attr="<a href=https://github.com/digidem/leaflet-side-by-side</a>")
+    # layer_left = folium.TileLayer('OpenStreetMap')#,attr="<a href=https://github.com/digidem/leaflet-side-by-side</a>")
+    
+    # layer_left.add_to(m)
+    # layer_right.add_to(m)
+    
+    # sbs = folium.plugins.SideBySideLayers(layer_left=layer_left, layer_right=layer_right)
+    # sbs.add_to(m)
+    
+    # folium.LayerControl().add_to(m)
+    # m.save(r'\\gisdata\Users\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\BeforeAndAfterMaps\TileLayer_slider.html') 
+    
+    
+    a = folium.GeoJson(    
+         geojson_after,
+                    style_function = lambda x : {
+                    'fillColor': color_map_a.get(x['properties']['EcosystemType'].lower(),'orange'),
+                    'color': 'black',
+                      'weight': 0.4,
+                      'fillOpacity': 0.6
+                      },
+                        
+                    tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Type'])
+                 )
+    
+    
+     
+    
+    b = folium.GeoJson(    
+          geojson_before,
+                     style_function = lambda x : {
+                     'fillColor': color_map_b.get(x['properties']['EcosystemType'].lower(),'orange'),
+                     'color': 'black',
+                       'weight': 0.4,
+                       'fillOpacity': 0.6
+                       },
+                         
+                     tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Type'])
+                  )
+    
+    # Add GeoJSON layers to the map
+    # a.add_to(m)
+    # b.add_to(m)
+    layer_right = folium.TileLayer('CartoDB Positron')#,attr="<a href=https://github.com/digidem/leaflet-side-by-side</a>")
+    layer_left = folium.TileLayer('OpenStreetMap')#,attr="<a href=https://github.com/digidem/leaflet-side-by-side</a>")
+    a.add_to(layer_right)
+    b.add_to(layer_left)
+
+
+    # sbs = folium.plugins.SideBySideLayers(layer_left=a,layer_right=b)
+    sbs = folium.plugins.SideBySideLayers(layer_left=layer_left,layer_right=layer_right)
+    sbs.add_to(m)
+    
+    # slider_plot =  widgets.interactive(plot_map,time_index=(0,1))
+    # op = slider_plot.children[-1]
+    # op.layout.height = '500px'
+    # plot_map(0)
+    
+     
+    folium.LayerControl().add_to(m)
+    
+    # map_file = r'\\gisdata\Users\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\BeforeAndAfterMaps\BeforeAndAfter_slider.html'
+    # m.save("side_by_side_map_with_custom_style.html")
+    m.save(r'\\gisdata\Users\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\BeforeAndAfterMaps\BeforeAndAfter_slider.html')  # Save the map with layers
+    
+    
+    
+    
+    # # Manually add Flexbox CSS to the saved HTML file
+    # with open(map_file, 'r') as f:
+    #     html_content = f.read()
+    
+    # # Add Flexbox CSS to center the map
+    # flexbox_css = """
+    # <style>
+    #   /* Flexbox container to center the map */
+    #   .folium-map {
+    #       display: flex;
+    #       justify-content: center;
+    #       align-items: center;
+    #       height: 100vh;             /* Take full screen height */
+    #       width: 100%;               /* Full width of the container */
+    #       padding: 0;
+    #       margin: 0;
+    #   }
+    
+    #   /* You can adjust the map's fixed width and height */
+    #   .leaflet-container {
+    #       width: 1000px !important;   /* Set map width */
+    #       height: 600px !important;   /* Set map height */
+    #   }
+    # </style>
+    # """
+    
+    # # Insert the custom CSS into the HTML content
+    # html_content = html_content.replace('</head>', flexbox_css + '</head>')
+    
+    # # Write the modified HTML back to the file
+    # with open(map_file, 'w') as f:
+    #     f.write(html_content)
+    
+    # # Automatically open the HTML file in the browser
+    # import webbrowser
+    # webbrowser.open(map_file)
+    # IFrame("BeforeAndAfter_slider", width=1000, height=600)
     
     
     ###########################################################################
-    # 20241101: Luke trying something...
+    # # 20241101: Luke trying something...
     # folium.GeoJson(
-    #     data=gdf_after_reproj,  # Pass geometry as a positional argument
-    #     tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
+    #     data=geojson_after,  # Pass geometry as a positional argument
+    #     #tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
     # ).add_to(m)
     ###########################################################################
     
@@ -356,25 +473,39 @@ def main():
 
   # added by Sivee - 3:07 pm 1/11/2024
    
-    for _,row in gdf_after_reproj.iterrows():
-       class_val = row['EcosystemType'].lower()
-       color = color_map.get(class_val, '#fffff')
-       print(color)
-       folium.GeoJson(
-                   data=row.geometry,  # Pass geometry as a positional argument
-                   style_function=lambda x, color = color: {
-                       'fillColor':color,
-                       'color': 'black',
-                       'weight': 0.4,
-                       'fillOpacity': 0.6
-                   },
+    # for _,row in gdf_after_reproj.iterrows():
+    #    class_val = row['EcosystemType'].lower()
+    #    color = color_map.get(class_val, '#fffff')
+    #    # print(color)
+    #    folium.GeoJson(
+    #                data=row.geometry,  # Pass geometry as a positional argument
+    #                style_function=lambda x, class_val=class_val: {
+    #                'fillColor': color_map.get(class_val),
+    #                    'color': 'black',
+    #                    'weight': 0.4,
+    #                    'fillOpacity': 0.6
+    #                },
                    
-                   tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
-               ).add_to(m)
-       #print(color_map.get(class_val))
+    #                # tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Class'])  # Tooltip as a keyword argument
+    #            ).add_to(m)
+    #    print(color_map.get(class_val))
+    
+    # 'fillColor': get_color(x['properties']['HLClass'],colormap
+    
+    # gdf_before_reproj.plot(figsize=(6,6))
+    # plt.show()
+    # map_ecotype_folium = folium.GeoJson(
+    #                     geojson_after,
+    #                     #class_val = row['EcosystemType'].lower(), #Convert to lower case to avoid case sensitivity,
+    #                     style_function = lambda x, color = color: {
+    #                         'fillColor': 'orange',
+    #                         'color' : 'none'
+    #                         },
+    #                     tooltip=folium.GeoJsonTooltip(fields=['Ecosystem_Type', 'HLClass'], aliases=['Ecosystem Type', 'High level ET Class'])
+    #                     ).add_to(m)    
+    
        
-       
-    m.save(r'\\gisdata\Users\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\BeforeAndAfterMaps\interactive_map_1.html')  # Save the map with layers
+   
 
         
     # map_ecotype_folium = folium.GeoJson(
@@ -419,15 +550,6 @@ def main():
 
     
 
-    # layer_right = folium.TileLayer('geojson_after',attr="<a href=https://github.com/digidem/leaflet-side-by-side</a>")
-    # layer_left = folium.TileLayer('geojson_before',attr="<a href=https://github.com/digidem/leaflet-side-by-side</a>")
-    
-    # sbs = folium.plugins.SideBySideLayers(layer_left=layer_left, layer_right=layer_right)
-    
-    # layer_left.add_to(m)
-    # layer_right.add_to(m)
-    # sbs.add_to(m)
-   
     # m = create_interactive_map(gdf_before, gdf_after,color_map,m)
     
 
@@ -499,17 +621,9 @@ def main():
     # plot_map(0)
     # m.save(r'\\ares\Science\Sivee\BeforeAndAfter.html')
                   
-    # # #change the crs
-    # gdf_ecotype_reproj = gdf_ecotype_sub.to_crs(epsg=4326)
-    # gdf_ecotype_reproj['geometry'] = gdf_ecotype_reproj['geometry'].simplify(tolerance=0.005, preserve_topology=True)
     
-    # gdf_diss_ecotype_reproj= dissShpHL.to_crs(epsg=4326)
-    # gdf_diss_ecotype_reproj['geometry'] = gdf_diss_ecotype_reproj['geometry'].simplify(tolerance=0.005, preserve_topology=True)
-
     
-    # #convert to geojson object
-    # json_ecotype = gdf_ecotype_reproj.to_json()
-    # json_diss_ecotype = gdf_diss_ecotype_reproj.to_json()
+    
     
     
     # ##### Get Map ##
@@ -549,17 +663,7 @@ def main():
    
 
 
-    # # for _, r in gdf_ecotype_reproj.iterrows():
-    # #     sim_geo = gpd.GeoSeries(r["geometry"]).simplify(tolerance=0.001) # Simpliyfing the polygons for easier/quicker display 
-    # #     geo_j = sim_geo.to_json() #converting to geojson
-    # #     geo_j = folium.GeoJson(data=geo_j, 
-    # #                            style_function=lambda x: { 
-    # #                                'fillColor': get_color(x['properties']['HLClass'],colormap),
-    # #                                'color' : 'none'
-    # #                                })
-    # #     folium.Popup(r["Label"]).add_to(geo_j)
-    # #     geo_j.add_to(m)
-        
+
     
    
     
