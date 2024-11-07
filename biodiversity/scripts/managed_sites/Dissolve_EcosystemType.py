@@ -10,7 +10,7 @@ Purpose : Dissolve the map to high level classes and then work with it
 
 import pandas as pd
 import geopandas as gpd
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import copy
 import folium 
 from branca.element import Template, MacroElement, Element, IFrame
