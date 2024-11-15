@@ -9,3 +9,9 @@ groundwater/scripts/state_maps/settings.py
 surface_water_quality/scripts/swimmability/settings.py
 surface_water_quality/scripts/swimmability/data/~$Kai Iwi_Swimmability_2024.xlsx
 surface_water_quality/scripts/swimmability/test.html
+surface_water_quantity/example_data/SW Status.xls
+*.xlsx
+air_quality/scripts/settings.py
+biodiversity/scripts/managed_sites/LukeTest.py
+air_quality/scripts/test.html
+air_quality/scripts/test2.html
