@@ -33,7 +33,7 @@ metadata =    pd.read_excel(settings.get('data_file'), sheet_name=settings.get('
 metadata = metadata.loc[metadata[settings.get('meta_data').get('site_id_column')].isin(settings.get('mw_site_ids'))].reset_index(drop = True)  
 
 #add better site name
-metadata['full_site_name'] =  metadata[settings.get('meta_data').get('site_area_column')] + ' <br> ' + metadata[settings.get('meta_data').get('site_name_column')] 
+metadata['full_site_name'] =  metadata[settings.get('meta_data').get('site_area_column')] + ' <br> <b>' + metadata[settings.get('meta_data').get('site_name_column')] + '</b>' 
 
 site_name_map =  metadata.set_index(settings.get('meta_data').get('site_id_column'))['full_site_name'].to_dict()
 
@@ -126,22 +126,30 @@ import plotly.express as px
 
 import plotly.express as px
 
+bar_colours = ['#273747','#000000','#00A7CF','#87BE43','#B84626','#4B9B5B','#1281AA','#D3D3D3']
+colour_dict =  dict(zip(bar_colours, bar_colours))
+site_color_map = dict(zip(list(data['site name'].unique()), bar_colours[0:len(list(data['site name'].unique()))]))
+data['site_color_map'] = data['site name'].map(site_color_map)
+
 # Clean up the facet titles by adding manual line breaks
 # data['site name wrapped'] = data['site name'].apply(lambda x: '\n'.join([x[i:i+10] for i in range(0, len(x), 10)]))  # Adjust the wrap length as needed
 
 # Create the bar chart with faceting by wrapped 'site name'
-fig = px.bar(data, x='year', y='value', color='site name', 
+fig = px.bar(data, x='year', y='value', 
+             color='site_color_map', 
+             color_discrete_map = colour_dict,
              facet_col='site name',  # Use the wrapped column for facet titles
              title="",
-             labels={"year": "Year", "value": "Value", "site name": "site name"},
+             labels={"year": "", "value": "Value", "site name": "site name"},
              hover_data=['site name'],
              template='ggplot2',
              # barmode='group',  # Bars grouped by year, not stacked
              category_orders={'site name': sorted(data['site name'].unique())})  # Ensure site order
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[1]))
 fig.add_hline(y=10, 
-              line_width=5, line_color="black",
-              annotation_text="National target",
+              line_width=5, line_color="white",
+              annotation_font_color="white",
+              annotation_text="WHO air quality guideline  ",
               annotation_position="bottom right")
 
 fig.update_layout(bargap=0)  # Remove space between facets)
@@ -150,9 +158,17 @@ fig.update_layout(bargap=0)  # Remove space between facets)
 # fig.for_each_trace(lambda t: t.update(name=t.name.split("=")[1]))
 fig.update_layout(showlegend=False)
 
+fig.update_layout(
+    font=dict(size=14),  # Global text size for axes and legends
+    xaxis_title="",
+    yaxis_title=r"Nitrogen dioxide annual average concentration  (µg/m3)",
+    autosize=False,
+    width=1500,
+    height=800,
+)
 
 
-fig.write_html('test2.html')
+fig.write_html(r'../results/NO2_air_quality_results.html')
 
 
 
