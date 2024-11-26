@@ -241,16 +241,33 @@ def main():
     m = folium.Map(location=[-40.006, 175.94], zoom_start=8,tiles = None)
     folium.TileLayer(tiles = 'CartoDB Positron', control = False).add_to(m)
     
-    befor_vegcover = folium.FeatureGroup(name = "Before Vegetation cover", overlay= False)
-    after_vegcover = folium.FeatureGroup(name = "After Vegetation cover", overlay = False)
     
+    befor_vegcover = folium.FeatureGroup(name = "Before Vegetation cover", show=True, overlay= False)
+    after_vegcover = folium.FeatureGroup(name = "After Vegetation cover", show=False, overlay = False)
     
     # # Convert both GeoDataFrames to GeoJSON
     geojson_before = gdf_before_reproj.to_json()
     geojson_after = gdf_after_reproj.to_json()
-    
+
+
     
     legend_html = load_legend_template (ETCol_df,settings.get("ETcoloumn"),settings.get("color_coloumn"))
+
+    b = folium.GeoJson(    
+          geojson_before,
+                     style_function = lambda x : {
+                     'fillColor': color_map.get(x['properties'].get('EcosystemType','').lower()),
+                     'color': 'white',
+                       'weight': 0.4,
+                       'fillOpacity': 0.7
+                       },
+                         
+                     tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Type'])
+                  )
+    
+    befor_vegcover.add_child(b)
+    
+
     
     a = folium.GeoJson(    
          geojson_after,
@@ -268,30 +285,19 @@ def main():
     after_vegcover.add_child(a)
     
     
-    b = folium.GeoJson(    
-          geojson_before,
-                     style_function = lambda x : {
-                     'fillColor': color_map.get(x['properties'].get('EcosystemType','').lower()),
-                     'color': 'white',
-                       'weight': 0.4,
-                       'fillOpacity': 0.7
-                       },
-                         
-                     tooltip=folium.GeoJsonTooltip(fields=['EcosystemType'], aliases=['Vegetation Type'])
-                  )
-    befor_vegcover.add_child(b)
+    
+    
     
     befor_vegcover.add_to(m)
     after_vegcover.add_to(m)
-    
 #     GroupedLayerControl(
 #     overlays={
 #         'Group': [befor_vegcover, after_vegcover]
 #     }
 # ).add_to(m)
     
+
     folium.LayerControl(collapsed =False).add_to(m)
-    
     macro = MacroElement()
     macro._template = Template(legend_html)  
     m.get_root().add_child(macro)
