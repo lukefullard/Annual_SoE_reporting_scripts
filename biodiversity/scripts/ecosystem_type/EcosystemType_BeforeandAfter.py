@@ -301,6 +301,19 @@ def main():
     macro = MacroElement()
     macro._template = Template(legend_html)  
     m.get_root().add_child(macro)
+    
+   
+    # Add custom JavaScript to disable the default outline
+    custom_css = """
+    <style>
+    path.leaflet-interactive:focus {
+        outline: none;
+    }
+    </style>
+    """
+    # Add the custom CSS to the map
+    m.get_root().html.add_child(Element(custom_css))
+    
     # m.save(r'\\ares\Science\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\BeforeAndAfterMaps\BeforeAndAfter_Legend.html')
     m.save(r'\\gisdata\Users\SChawla\AnnualSOE_Orangawai\SOE_Biodiveristy\BeforeAndAfterMaps\BeforeAndAfter_slider.html')  # Save the map with layers
     
