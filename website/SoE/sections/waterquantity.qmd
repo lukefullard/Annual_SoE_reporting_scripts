@@ -1,0 +1,24 @@
+---
+title: "Water Quantity"
+---
+<script>
+  window.addEventListener('resize', function () {
+    const iframe = document.querySelector('iframe');
+    iframe.style.height = window.innerHeight * 0.8 + 'px'; // 80% of the viewport height
+  });
+</script>
+
+This is a Quarto website.
+
+::: {.panel-tabset}
+
+## Surface water
+todo
+
+
+
+
+## Groundwater
+Exists, apparently...
+
+:::

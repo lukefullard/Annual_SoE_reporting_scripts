@@ -1,0 +1,35 @@
+---
+title: "Biodiversity"
+---
+<script>
+  window.addEventListener('resize', function () {
+    const iframe = document.querySelector('iframe');
+    iframe.style.height = window.innerHeight * 0.8 + 'px'; // 80% of the viewport height
+  });
+</script>
+
+This is a Quarto website.
+
+::: {.panel-tabset}
+
+## Habitat loss
+Sad
+<iframe src="https://lukefullard.github.io/Annual_SoE_reporting_scripts/biodiversity/results/ecosystem_type/BeforeAndAfter_slider.html" 
+        style="width: 100%; height: 80vh; border: none;">
+        Your browser does not support embedded frames (iframes) <a href="...." target="_blank">further</a>
+</iframe>
+
+
+
+
+## Managed sites
+Manage!
+<iframe src="https://lukefullard.github.io/Annual_SoE_reporting_scripts/biodiversity/results/managed_sites/" 
+        style="width: 100%; height: 80vh; border: none;">
+        Your browser does not support embedded frames (iframes) <a href="...." target="_blank">further</a>
+</iframe>
+
+## Wetlands
+ummm yup
+
+:::
